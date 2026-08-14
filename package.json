@@ -1,0 +1,26 @@
+{
+  "name": "dsh-ssh-remotes",
+  "version": "1.0.0",
+  "description": "SSH Remote Workspaces plugin for DeepSeek Harness: add, test, browse and manage remote hosts with agent/key/password authentication, plus a two-step username@host + password login flow.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "code.host.js",
+    "code.client.js",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "ssh",
+    "remote",
+    "workspace"
+  ],
+  "license": "MIT"
+}
