@@ -1,79 +1,59 @@
-# dsh-ssh-remotes
+# DSH Remote-SSH
 
-SSH Remote Workspaces plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH).
+原生 Remote-SSH 语义的标准 DSH 双端插件：浏览器 UI、会话、LLM 与 Agent 调度留在本机，远端只运行一个无依赖的轻量 Node.js 执行 Host。
 
-Add **remote workspaces** to the Harness sidebar: connect to a remote host over SSH, test the
-connection, browse remote directories, run remote commands, and read/write remote files —
-with agent, explicit-key, ssh-config, or **username + password** authentication.
+## 架构
 
-## Features
-
-- Sidebar entry **「SSH Remote」** (`sidebar.footer.action`) opens a management panel (`shell.overlay`)
-- Connection profiles persisted in the DSH storage backend (`$DSH_HOME/storages/sshremotes.json`)
-- Four auth modes:
-  - `agent / default key` — ssh-agent or `~/.ssh` default keys
-  - `explicit key file` — a private key path
-  - `username + password` — **two-step login**: step 1 `user@host[:port]`, step 2 the password;
-    password is cached in memory only, never saved, and the temp password file is wiped after use
-    (implemented with OpenSSH `SSH_ASKPASS` + `SSH_ASKPASS_REQUIRE=force`, the same mechanism
-    VS Code Remote-SSH uses on Windows)
-  - `~/.ssh/config alias` — host field holds a config alias
-- Per-connection actions: Test / Login-Logout / Browse (remote `ls`) / Run command / Remove
-- Password connections require a one-time login; subsequent operations reuse the in-memory credential
-
-## File layout
-
-```
-dsh-ssh-remotes/
-├── package.json          # Cordis package metadata (host half, ESM)
-├── lib/index.js          # Host half as a standard Cordis plugin (export default { name, inject, apply })
-├── code.host.js          # Host half as a dynamic-plugin function body (paste into cordis_define)
-├── code.client.js        # Client half as a dynamic-plugin function body (paste into cordis_define)
-└── README.md
+```text
+Local DSH Web + sessions + LLM/Agent
+  ├─ native better-sidebar tab: SSH 连接目标
+  ├─ remote folder picker + recent workspace history
+  ├─ native better-sidebar tab: Remote Explorer
+  ├─ ctx.fs bridge (read/write/edit/list/stat)
+  └─ ctx.shell bridge (foreground/background command)
+          │ token-authenticated HTTP over ssh -L
+          ▼
+Remote Host (remote-host.cjs, 127.0.0.1 only)
+  └─ workspace-root fenced fs + bash
 ```
 
-## Installation
+它不会启动远端 `dsh web`，也不会把浏览器导航到另一套页面。连接成功后，插件创建本地 marker 目录作为 DSH workspace identity；现有文件工具根据 session cwd 自动识别远程会话并透明转发。普通本地会话继续使用原 `ctx.fs` / `ctx.shell` 实现。
 
-### Option A — dynamic load (no build required, recommended)
+## 安装
 
-In any DSH session with the Web UI:
-
-1. Create a new Cordis dynamic plugin (`cordis_define`).
-2. Paste the full content of `code.host.js` into `code.host`, and `code.client.js` into `code.client`.
-3. Run the package (`cordis_run`) and approve the client activation.
-4. The **「SSH Remote」** button appears at the sidebar foot.
-
-### Option B — standard host install
-
-The host half is a plain Cordis plugin:
-
-```bash
-dsh plugin --profile web add <path-or-git-url-of-dsh-ssh-remotes>
+```powershell
+dsh plugin --profile web add D:\Plugin\dsh-ssh-remotes
+dsh web
 ```
 
-then add it to the profile composition (`cordis.patch.yml`) with any required services present.
-Note: the browser UI half is delivered via the dynamic path above; a prebuilt `./client` web
-bundle is not shipped because it must be produced by the DSH client build chain.
+打开左下角 `SSH` 进入“SSH 连接目标”，添加主机后点击“选择文件夹”。资源页会通过 SSH 浏览服务器目录；选中目录并点击“打开此文件夹”后，它会成为 DSH 工作区并自动出现在最近目录下。连接操作会自动上传 `remote-host.cjs`；远端只要求 OpenSSH 与 Node.js 12+，不要求安装 DSH 或 Web UI。
 
-## Requirements
+## 已实现
 
-- Windows with the OpenSSH client (`C:\Windows\System32\OpenSSH\ssh.exe` or `ssh` on PATH)
-  — also works on Linux/macOS where `ssh` is present
-- Password auth needs `SSH_ASKPASS_REQUIRE=force` support (OpenSSH >= 8.4; the bundled
-  Windows OpenSSH 9.x qualifies)
+- 标准 DSH bundle/client 包结构（`exports`, `dsh.bundle.patch`, `dsh.client`）
+- SSH config、Agent/默认密钥、指定密钥、临时密码认证
+- 随机 token、远端 loopback-only 监听、SSH 本地转发
+- 远程根目录围栏与 `read-only` 写拒绝
+- `read` / `write` / `edit` / directory listing / binary read 的 `ctx.fs` 透明路由
+- 前台与后台 `ctx.shell` 路由；远端命令由 `/bin/bash -lc` 执行
+- Trae 风格 `SSH 连接目标` 资源页：主机节点、远程目录选择器、最近工作区子节点
+- 直接把所选远程目录登记并打开为当前 DSH workspace，无需手工输入路径
+- better-sidebar 原生 `Remote Explorer` 页：目录浏览、文件读取/保存、命令与 git 操作
+- 同一 DSH 实例混合本地与远程会话
 
-## Security notes
+## 当前边界
 
-- Passwords live in the harness process memory only and are cleared on logout / connection
-  removal / plugin stop.
-- The temporary password file (random name, harness-private directory) is emptied right after use.
-- SSH runs non-interactively: `BatchMode=yes` (key auth), `ConnectTimeout=10`,
-  `StrictHostKeyChecking=accept-new`, `RequestTTY=no`.
+- 交互 PTY/终端重连仍是下一阶段；当前 Remote Explorer 提供一次性命令，Agent shell 支持前台/后台执行。
+- 远端 Host 当前面向 POSIX/Linux（使用 `/bin/bash`）。
+- Remote Explorer 使用插件自己的远程 API；better-sidebar 内置 Explorer 仍面向本地 marker 目录。
+- 远端连接在本地 DSH Host 重启后需重新连接；连接配置会持久化，密码不会落盘。
 
-## RPC surface (package-private, Client → Host)
+## 开发验证
 
-`status`, `list`, `add`, `remove`, `auth`, `logout`, `test`, `ls`, `read`, `write`, `exec`
-
-## License
-
-MIT
+```powershell
+npm run typecheck
+npm test
+npm run build
+$env:npm_config_cache = "$PWD\.npm-cache"
+npm run pack:check
+```

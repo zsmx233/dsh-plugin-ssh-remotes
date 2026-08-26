@@ -1,0 +1,1 @@
+{"version":3,"file":"execution-bridge.d.ts","sourceRoot":"","sources":["../../src/execution-bridge.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,qBAAqB,CAAA;AAClD,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,kBAAkB,CAAA;AAexD,wBAAgB,sBAAsB,CAAC,GAAG,EAAE,OAAO,EAAE,OAAO,EAAE,gBAAgB,GAAG,MAAM,IAAI,CAiC1F"}

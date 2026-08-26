@@ -1,0 +1,7 @@
+# Standard DSH profile bundle. The host entry exposes the loopback-only
+# Remote-SSH controller; package.json's dsh.client declaration ships the
+# browser half from ./client.
+- insert:
+    - id: remote-ssh
+      name: '@dsh-external/dsh-remote-ssh'
+      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@dsh-external/dsh-remote-ssh' && e.options.id !== 'remote-ssh' && !e.disabled)"

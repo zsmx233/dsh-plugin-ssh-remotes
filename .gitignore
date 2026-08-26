@@ -1,8 +1,9 @@
-# Logs and local temp files
+node_modules/
+.npm-cache/
+*.tgz
 *.log
 *.tmp
 
-# Editor/OS noise
 .DS_Store
 Thumbs.db
 .idea/

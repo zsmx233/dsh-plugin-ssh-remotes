@@ -1,26 +1,82 @@
 {
-  "name": "dsh-ssh-remotes",
-  "version": "1.0.0",
-  "description": "SSH Remote Workspaces plugin for DeepSeek Harness: add, test, browse and manage remote hosts with agent/key/password authentication, plus a two-step username@host + password login flow.",
+  "name": "@dsh-external/dsh-remote-ssh",
+  "version": "0.4.0",
+  "description": "Native Remote-SSH workspaces for DeepSeek Harness: local UI, sessions and agents with a lightweight remote execution plane.",
   "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
   "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
   "exports": {
-    ".": "./lib/index.js",
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
     "./package.json": "./package.json"
   },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.1-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  },
   "files": [
-    "lib",
-    "code.host.js",
-    "code.client.js",
+    "lib/**/*.js",
+    "lib/**/*.js.map",
+    "lib/**/*.d.ts",
+    "lib/**/*.d.ts.map",
+    "remote-host.cjs",
+    "src",
+    "cordis.patch.yml",
     "README.md"
   ],
-  "keywords": [
-    "dsh",
-    "deepseek-harness",
-    "cordis",
-    "ssh",
-    "remote",
-    "workspace"
-  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsdown",
+    "bundle": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": ">=0.1.1-rc.1",
+    "@deepseek-ai/dsh-client-ui-layout": ">=0.1.1-rc.1",
+    "@deepseek-ai/dsh-client-ui-sidebar": ">=0.1.1-rc.1",
+    "@deepseek-ai/dsh-client-ui-slots": ">=0.1.1-rc.1",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.1-rc.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-layout": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.1.1-rc.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "~18.3.1",
+    "@types/react-dom": "^18.3.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "0.22.2",
+    "typescript": "~5.7.2"
+  },
   "license": "MIT"
 }
